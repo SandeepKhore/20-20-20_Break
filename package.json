@@ -1,0 +1,33 @@
+{
+  "name": "20-20-20-break",
+  "version": "1.0.0",
+  "description": "Simple 20-20-20 rule break timer",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "start": "NODE_ENV=development bun electron .",
+    "build": "NODE_ENV=production bun electron-builder",
+    "pack": "NODE_ENV=production bun electron-builder --dir"
+  },
+  "trustedDependencies": ["electron-store", "auto-launch"],
+  "build": {
+    "appId": "com.20-20-20-break",
+    "productName": "20-20-20 Break",
+    "mac": {
+      "category": "public.app-category.healthcare-fitness",
+      "target": ["dmg", "zip"],
+      "darkModeSupport": true
+    }
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6",
+    "dotenv": "^17.2.2",
+    "electron-store": "^10.1.0"
+  }
+}
