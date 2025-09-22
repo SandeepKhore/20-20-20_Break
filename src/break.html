@@ -31,6 +31,45 @@
             font-size: 4em;
             font-weight: bold;
             color: #3498db;
+            margin-bottom: 30px;
+        }
+        .actions {
+            display: flex;
+            gap: 6px;
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            opacity: 0.4;
+        }
+        .actions:hover {
+            opacity: 0.9;
+        }
+        button {
+            padding: 3px 8px;
+            font-size: 0.8em;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0.7;
+            background-color: rgba(0, 0, 0, 0.3);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        button:hover {
+            opacity: 1;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        button.postpone {
+            background-color: rgba(52, 152, 219, 0.3);
+        }
+        button.postpone:hover {
+            background-color: rgba(52, 152, 219, 0.5);
+        }
+        button.skip {
+            background-color: rgba(231, 76, 60, 0.3);
+        }
+        button.skip:hover {
+            background-color: rgba(231, 76, 60, 0.5);
         }
     </style>
 </head>
@@ -39,24 +78,66 @@
         <h1>Time for a Break!</h1>
         <div class="message">Look at something 20 feet away to reduce eye strain</div>
         <div class="timer" id="timer">20</div>
+        <div class="actions">
+            <button class="skip" onclick="skipBreak()">Skip Break</button>
+        </div>
     </div>
     <audio id="breakSound"></audio>
     <script>
+        const { ipcRenderer } = require('electron');
         const timer = document.getElementById('timer');
         const breakSound = document.getElementById('breakSound');
         let timeLeft = 20;
 
-        // Set up audio with the correct path
-        const audioPath = require('electron').ipcRenderer.sendSync('get-asset-path', 'humming.mp3');
-        breakSound.src = audioPath;
+        // Prevent gesture-based window switching
+        document.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, { passive: false });
+
+        // Prevent trackpad gestures
+        document.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
         
-        // Play the sound when the window opens
-        breakSound.load(); // Ensure the audio is loaded with the new source
-        setTimeout(() => { // Small delay to ensure audio is loaded
-            breakSound.play().catch(error => {
-                console.error('Error playing sound:', error);
-            });
-        }, 100);
+        document.addEventListener('gesturechange', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
+        
+        document.addEventListener('gestureend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
+
+        // Set up audio with the correct path
+        const audioPath = ipcRenderer.sendSync('get-asset-path', 'sound-healing.mp3');
+        breakSound.src = audioPath;
+
+        function skipBreak() {
+            ipcRenderer.send('skip-break');
+        }
+        
+        // Get audio setting
+        const audioSetting = ipcRenderer.sendSync('get-audio-setting');
+        
+        if (audioSetting !== 'disabled') {
+            // Set the correct audio file based on setting
+            const audioFile = audioSetting === 'humming' ? 'humming.mp3' : 'sound-healing.mp3';
+            const audioPath = ipcRenderer.sendSync('get-asset-path', audioFile);
+            breakSound.src = audioPath;
+            
+            // Play the sound when the window opens
+            breakSound.load(); // Ensure the audio is loaded with the new source
+            setTimeout(() => { // Small delay to ensure audio is loaded
+                breakSound.play().catch(error => {
+                    console.error('Error playing sound:', error);
+                });
+            }, 100);
+        }
 
         const countdown = setInterval(() => {
             timeLeft--;

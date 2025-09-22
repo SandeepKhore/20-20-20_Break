@@ -29,12 +29,18 @@ const autoLauncher = process.env.NODE_ENV !== 'development' ? new AutoLaunch({
 if (!store.has('autoLaunch')) {
     store.set('autoLaunch', true);
 }
+if (!store.has('audioSetting')) {
+    store.set('audioSetting', 'sound-healing'); // Default to sound-healing.mp3
+}
 
 let tray;
 let breakWindow;
 let timer;
+let isPaused = false;
+let pauseEndTime = null;
 const WORK_DURATION = 20 * 60 * 1000; // 20 minutes in milliseconds
 const BREAK_DURATION = 20 * 1000;      // 20 seconds in milliseconds
+const MINUTE = 60 * 1000; // 1 minute in milliseconds
 
 // Create the break window that blocks the screen
 function createBreakWindow() {
@@ -46,7 +52,14 @@ function createBreakWindow() {
         frame: false,
         skipTaskbar: true,
         alwaysOnTop: true,
-        fullscreen: true,
+        fullscreen: false, // Start without fullscreen
+        focusable: true,
+        movable: false,
+        minimizable: false,
+        maximizable: false,
+        closable: false,
+        fullscreenable: true,
+        kiosk: false, // Start without kiosk
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
@@ -54,6 +67,25 @@ function createBreakWindow() {
             audioPlayback: true  // Explicitly enable audio
         }
     });
+    
+    // Set up window modes in sequence
+    breakWindow.once('ready-to-show', () => {
+        // First set fullscreen
+        breakWindow.setFullScreen(true);
+        // Then enable kiosk mode after a small delay
+        setTimeout(() => {
+            breakWindow.setKiosk(true);
+        }, 100);
+    });
+    
+    // Prevent window from losing focus
+    breakWindow.on('blur', () => {
+        breakWindow.focus();
+    });
+    
+    // Additional window lock settings
+    breakWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    breakWindow.setAlwaysOnTop(true, 'screen-saver', 1);
 
     breakWindow.loadFile(path.join(__dirname, 'break.html'));
     
@@ -78,23 +110,161 @@ function startBreak() {
     }, BREAK_DURATION);
 }
 
-// Start the timer for the next break
-function startTimer() {
+// Pause the timer for a specified duration
+function pauseTimer(duration) {
+    isPaused = true;
+    pauseEndTime = Date.now() + duration;
+    
     if (timer) {
         clearTimeout(timer);
     }
     
+    // Resume after pause duration
+    timer = setTimeout(() => {
+        isPaused = false;
+        pauseEndTime = null;
+        startTimer();
+    }, duration);
+
+    // Update tray tooltip with pause end time
+    if (tray) {
+        const resumeTime = new Date(pauseEndTime);
+        const hours = resumeTime.getHours().toString().padStart(2, '0');
+        const minutes = resumeTime.getMinutes().toString().padStart(2, '0');
+        tray.setToolTip(`Paused until ${hours}:${minutes}`);
+        updateTrayMenu();
+    }
+}
+
+// Start the timer for the next break
+function startTimer(customDuration) {
+    if (isPaused) {
+        return;
+    }
+
+    if (timer) {
+        clearTimeout(timer);
+    }
+    
+    const duration = customDuration || WORK_DURATION;
     timer = setTimeout(() => {
         startBreak();
-    }, WORK_DURATION);
+    }, duration);
 
     // Update tray tooltip with next break time
     if (tray) {
-        const nextBreak = new Date(Date.now() + WORK_DURATION);
+        const nextBreak = new Date(Date.now() + duration);
         const hours = nextBreak.getHours().toString().padStart(2, '0');
         const minutes = nextBreak.getMinutes().toString().padStart(2, '0');
         tray.setToolTip(`Next break at ${hours}:${minutes}`);
+        updateTrayMenu();
     }
+}
+
+// Function to build and update the tray menu
+function updateTrayMenu() {
+    if (!tray) return;
+
+    const pauseSubmenu = [
+        { 
+            label: 'For 1 hour',
+            click: () => pauseTimer(60 * MINUTE),
+            enabled: !isPaused
+        },
+        { 
+            label: 'For 2 hours',
+            click: () => pauseTimer(120 * MINUTE),
+            enabled: !isPaused
+        },
+        { 
+            label: 'Custom pause...',
+            click: () => {
+                // Create a small window for custom pause duration
+                const customWindow = new BrowserWindow({
+                    width: 300,
+                    height: 150,
+                    frame: true,
+                    resizable: false,
+                    webPreferences: {
+                        nodeIntegration: true,
+                        contextIsolation: false
+                    }
+                });
+                
+                customWindow.loadFile(path.join(__dirname, 'custom-pause.html'));
+            },
+            enabled: !isPaused
+        }
+    ];
+
+    const menuTemplate = [
+        { label: '20-20-20 Break Timer', enabled: false },
+        { type: 'separator' },
+        {
+            label: isPaused ? 'Resume Timer' : 'Pause Timer',
+            submenu: isPaused ? null : pauseSubmenu,
+            click: () => {
+                if (isPaused) {
+                    isPaused = false;
+                    pauseEndTime = null;
+                    startTimer();
+                }
+            }
+        },
+        { type: 'separator' },
+        { 
+            label: 'Start with System',
+            type: 'checkbox',
+            checked: store.get('autoLaunch'),
+            enabled: process.env.NODE_ENV !== 'development',
+            click: async () => {
+                if (process.env.NODE_ENV === 'development') {
+                    return;
+                }
+                const newState = !store.get('autoLaunch');
+                store.set('autoLaunch', newState);
+                if (newState) {
+                    await autoLauncher.enable();
+                } else {
+                    await autoLauncher.disable();
+                }
+            }
+        },
+        {
+            label: 'Break Sound',
+            submenu: [
+                {
+                    label: 'Sound Healing',
+                    type: 'radio',
+                    checked: store.get('audioSetting') === 'sound-healing',
+                    click: () => {
+                        store.set('audioSetting', 'sound-healing');
+                    }
+                },
+                {
+                    label: 'Humming',
+                    type: 'radio',
+                    checked: store.get('audioSetting') === 'humming',
+                    click: () => {
+                        store.set('audioSetting', 'humming');
+                    }
+                },
+                {
+                    label: 'Disabled',
+                    type: 'radio',
+                    checked: store.get('audioSetting') === 'disabled',
+                    click: () => {
+                        store.set('audioSetting', 'disabled');
+                    }
+                }
+            ]
+        },
+        { type: 'separator' },
+        { label: 'Quit', click: () => app.quit() }
+    ];
+
+    const contextMenu = Menu.buildFromTemplate(menuTemplate);
+    tray.setContextMenu(contextMenu);
 }
 
 // Create the tray icon
@@ -102,33 +272,7 @@ function createTray() {
     try {
         tray = new Tray(nativeImage.createEmpty());
         tray.setTitle('👁️');
-        
-        const contextMenu = Menu.buildFromTemplate([
-            { label: '20-20-20 Break Timer', enabled: false },
-            { type: 'separator' },
-            { 
-                label: 'Start with System',
-                type: 'checkbox',
-                checked: store.get('autoLaunch'),
-                enabled: process.env.NODE_ENV !== 'development',
-                click: async () => {
-                    if (process.env.NODE_ENV === 'development') {
-                        return;
-                    }
-                    const newState = !store.get('autoLaunch');
-                    store.set('autoLaunch', newState);
-                    if (newState) {
-                        await autoLauncher.enable();
-                    } else {
-                        await autoLauncher.disable();
-                    }
-                }
-            },
-            { type: 'separator' },
-            { label: 'Quit', click: () => app.quit() }
-        ]);
-        
-        tray.setContextMenu(contextMenu);
+        updateTrayMenu();
     } catch (error) {
         console.error('Failed to create tray:', error);
     }
@@ -137,6 +281,25 @@ function createTray() {
 // Handle asset path requests
 ipcMain.on('get-asset-path', (event, assetName) => {
     event.returnValue = path.join(__dirname, 'assets', assetName);
+});
+
+// Handle audio setting request
+ipcMain.on('get-audio-setting', (event) => {
+    event.returnValue = store.get('audioSetting');
+});
+
+// Handle break skip request
+ipcMain.on('skip-break', () => {
+    if (breakWindow) {
+        breakWindow.destroy();
+        breakWindow = null;
+    }
+    startTimer();
+});
+
+// Handle custom pause duration
+ipcMain.on('set-custom-pause', (_, minutes) => {
+    pauseTimer(minutes * MINUTE);
 });
 
 // Hide dock icon on macOS
