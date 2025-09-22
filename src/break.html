@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Take a Break</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: rgba(0, 0, 0, 0.95);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            text-align: center;
+        }
+        .break-content {
+            padding: 20px;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+        }
+        .message {
+            font-size: 2em;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+        .timer {
+            font-size: 4em;
+            font-weight: bold;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="break-content">
+        <h1>Time for a Break!</h1>
+        <div class="message">Look at something 20 feet away to reduce eye strain</div>
+        <div class="timer" id="timer">20</div>
+    </div>
+    <audio id="breakSound"></audio>
+    <script>
+        const timer = document.getElementById('timer');
+        const breakSound = document.getElementById('breakSound');
+        let timeLeft = 20;
+
+        // Set up audio with the correct path
+        const audioPath = require('electron').ipcRenderer.sendSync('get-asset-path', 'humming.mp3');
+        breakSound.src = audioPath;
+        
+        // Play the sound when the window opens
+        breakSound.load(); // Ensure the audio is loaded with the new source
+        setTimeout(() => { // Small delay to ensure audio is loaded
+            breakSound.play().catch(error => {
+                console.error('Error playing sound:', error);
+            });
+        }, 100);
+
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timer.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
