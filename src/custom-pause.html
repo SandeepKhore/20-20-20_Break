@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Custom Pause Duration</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        input {
+            padding: 5px;
+            font-size: 1em;
+            width: 60px;
+        }
+        button {
+            padding: 8px 15px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        button.cancel {
+            background-color: #95a5a6;
+        }
+        button.cancel:hover {
+            background-color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <h3>Set Custom Pause Duration</h3>
+    <div class="input-group">
+        <input type="number" id="hours" min="0" max="24" value="1" /> hours
+        <input type="number" id="minutes" min="0" max="59" value="0" /> minutes
+    </div>
+    <div class="buttons">
+        <button class="cancel" onclick="window.close()">Cancel</button>
+        <button onclick="setPause()">Set Pause</button>
+    </div>
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        function setPause() {
+            const hours = parseInt(document.getElementById('hours').value) || 0;
+            const minutes = parseInt(document.getElementById('minutes').value) || 0;
+            const totalMinutes = (hours * 60) + minutes;
+            
+            if (totalMinutes > 0) {
+                ipcRenderer.send('set-custom-pause', totalMinutes);
+                window.close();
+            }
+        }
+    </script>
+</body>
+</html>
