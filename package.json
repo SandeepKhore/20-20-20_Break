@@ -16,7 +16,14 @@
     "mac": {
       "category": "public.app-category.healthcare-fitness",
       "target": ["dmg", "zip"],
-      "darkModeSupport": true
+      "darkModeSupport": true,
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "icon": "build/icon.ico"
+    },
+    "linux": {
+      "icon": "build/icon.png"
     }
   },
   "author": "",
