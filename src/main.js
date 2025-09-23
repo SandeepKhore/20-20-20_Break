@@ -34,7 +34,7 @@ if (!store.has('audioSetting')) {
 }
 
 let tray;
-let breakWindow;
+let breakWindows = [];
 let timer;
 let isPaused = false;
 let pauseEndTime = null;
@@ -42,58 +42,74 @@ const WORK_DURATION = 20 * 60 * 1000; // 20 minutes in milliseconds
 const BREAK_DURATION = 20 * 1000;      // 20 seconds in milliseconds
 const MINUTE = 60 * 1000; // 1 minute in milliseconds
 
-// Create the break window that blocks the screen
+// Create break windows for all displays
 function createBreakWindow() {
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-    
-    breakWindow = new BrowserWindow({
-        width,
-        height,
-        frame: false,
-        skipTaskbar: true,
-        alwaysOnTop: true,
-        fullscreen: false, // Start without fullscreen
-        focusable: true,
-        movable: false,
-        minimizable: false,
-        maximizable: false,
-        closable: false,
-        fullscreenable: true,
-        kiosk: false, // Start without kiosk
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            webSecurity: false,  // Allow loading local resources
-            audioPlayback: true  // Explicitly enable audio
+    // Clear any existing break windows
+    breakWindows.forEach(window => {
+        if (!window.isDestroyed()) {
+            window.destroy();
         }
     });
-    
-    // Set up window modes in sequence
-    breakWindow.once('ready-to-show', () => {
-        // First set fullscreen
-        breakWindow.setFullScreen(true);
-        // Then enable kiosk mode after a small delay
-        setTimeout(() => {
-            breakWindow.setKiosk(true);
-        }, 100);
-    });
-    
-    // Prevent window from losing focus
-    breakWindow.on('blur', () => {
-        breakWindow.focus();
-    });
-    
-    // Additional window lock settings
-    breakWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    breakWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    breakWindows = [];
 
-    breakWindow.loadFile(path.join(__dirname, 'break.html'));
-    
-    // Prevent window from being closed by user keyboard shortcuts
-    breakWindow.setClosable(false);
-    
-    // Force the window to stay on top
-    breakWindow.setAlwaysOnTop(true, 'screen-saver');
+    // Create a window for each display
+    const displays = screen.getAllDisplays();
+    displays.forEach((display) => {
+        const { bounds } = display;
+        
+        const window = new BrowserWindow({
+            x: bounds.x,
+            y: bounds.y,
+            width: bounds.width,
+            height: bounds.height,
+            frame: false,
+            skipTaskbar: true,
+            alwaysOnTop: true,
+            fullscreen: false, // Start without fullscreen
+            focusable: true,
+            movable: false,
+            minimizable: false,
+            maximizable: false,
+            closable: false,
+            fullscreenable: true,
+            kiosk: false, // Start without kiosk
+            webPreferences: {
+                nodeIntegration: true,
+                contextIsolation: false,
+                webSecurity: false,  // Allow loading local resources
+                audioPlayback: display.id === screen.getPrimaryDisplay().id  // Only enable audio on primary display
+            }
+        });
+        
+        // Set up window modes in sequence
+        window.once('ready-to-show', () => {
+            // First set fullscreen
+            window.setFullScreen(true);
+            // Then enable kiosk mode after a small delay
+            setTimeout(() => {
+                window.setKiosk(true);
+            }, 100);
+        });
+        
+        // Prevent window from losing focus
+        window.on('blur', () => {
+            window.focus();
+        });
+        
+        // Additional window lock settings
+        window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+        window.setAlwaysOnTop(true, 'screen-saver', 1);
+
+        window.loadFile(path.join(__dirname, 'break.html'));
+        
+        // Prevent window from being closed by user keyboard shortcuts
+        window.setClosable(false);
+        
+        // Force the window to stay on top
+        window.setAlwaysOnTop(true, 'screen-saver');
+
+        breakWindows.push(window);
+    });
 }
 
 // Start a break
@@ -102,10 +118,13 @@ function startBreak() {
     
     // End break after BREAK_DURATION
     setTimeout(() => {
-        if (breakWindow) {
-            breakWindow.destroy(); // Use destroy instead of close
-            breakWindow = null;
-        }
+        // Clean up all break windows
+        breakWindows.forEach(window => {
+            if (!window.isDestroyed()) {
+                window.destroy();
+            }
+        });
+        breakWindows = [];
         startTimer(); // Restart the timer for the next break
     }, BREAK_DURATION);
 }
@@ -290,10 +309,12 @@ ipcMain.on('get-audio-setting', (event) => {
 
 // Handle break skip request
 ipcMain.on('skip-break', () => {
-    if (breakWindow) {
-        breakWindow.destroy();
-        breakWindow = null;
-    }
+    breakWindows.forEach(window => {
+        if (!window.isDestroyed()) {
+            window.destroy();
+        }
+    });
+    breakWindows = [];
     startTimer();
 });
 
@@ -336,7 +357,10 @@ app.on('window-all-closed', (e) => {
 
 // Quit the app when quit is selected from the tray menu
 app.on('before-quit', () => {
-    if (breakWindow) {
-        breakWindow.destroy();
-    }
+    breakWindows.forEach(window => {
+        if (!window.isDestroyed()) {
+            window.destroy();
+        }
+    });
+    breakWindows = [];
 });
