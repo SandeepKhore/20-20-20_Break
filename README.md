@@ -4,6 +4,14 @@ An Electron application that helps reduce eye strain by reminding you to follow 
 
 ## Features
 
+- Multi-screen Support: Displays reminders across all connected screens for comprehensive coverage
+- Screen Blocking: Actively blocks screens during break time to ensure you take proper breaks
+- Relaxing Sound Options:
+  - "Humming" meditation sound
+  - "Sound Healing" background audio
+- Flexible Timer Control:
+  - Pause functionality for planned meetings
+  - Emergency skip button when breaks aren't possible
 - Timer that counts down from 20 minutes
 - Desktop notifications when it's time to take a break
 - Simple and clean user interface
@@ -26,7 +34,17 @@ npm start
 
 ## How it Works
 
-The app will run a timer for 20 minutes. When the timer completes, you'll receive a notification to take a 20-second break and look at something 20 feet away. After the break, the timer will automatically restart.
+The app runs a timer for 20 minutes. When the timer completes, it activates break mode across all your connected displays:
+
+1. All screens display the break reminder
+2. Screens are temporarily blocked to encourage taking the break
+3. You can choose to play calming sounds ("humming" or "sound healing") during your break
+4. After 20 seconds, the timer automatically restarts
+
+Need flexibility? You can:
+- Pause the timer before meetings or important work sessions
+- Use the emergency skip button when you absolutely can't take a break
+- The timer will resume its normal cycle afterward
 
 ## Development
 

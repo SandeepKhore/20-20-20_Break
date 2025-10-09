@@ -280,6 +280,15 @@ function updateTrayMenu() {
             ]
         },
         { type: 'separator' },
+        {
+            label: 'Show Skip Button',
+            type: 'checkbox',
+            checked: store.get('showSkipButton', true),
+            click: (menuItem) => {
+                store.set('showSkipButton', menuItem.checked);
+            }
+        },
+        { type: 'separator' },
         { label: 'Quit', click: () => app.quit() }
     ];
 
@@ -306,6 +315,11 @@ ipcMain.on('get-asset-path', (event, assetName) => {
 // Handle audio setting request
 ipcMain.on('get-audio-setting', (event) => {
     event.returnValue = store.get('audioSetting');
+});
+
+// Handle skip button visibility setting request
+ipcMain.on('get-skip-button-setting', (event) => {
+    event.returnValue = store.get('showSkipButton', true);
 });
 
 // Handle break skip request
