@@ -1,6 +1,6 @@
 {
   "name": "20-20-20-break",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Simple 20-20-20 rule break timer",
   "main": "src/main.js",
   "type": "module",

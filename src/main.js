@@ -219,18 +219,6 @@ function updateTrayMenu() {
     const menuTemplate = [
         { label: '20-20-20 Break Timer', enabled: false },
         { type: 'separator' },
-        {
-            label: isPaused ? 'Resume Timer' : 'Pause Timer',
-            submenu: isPaused ? null : pauseSubmenu,
-            click: () => {
-                if (isPaused) {
-                    isPaused = false;
-                    pauseEndTime = null;
-                    startTimer();
-                }
-            }
-        },
-        { type: 'separator' },
         { 
             label: 'Start with System',
             type: 'checkbox',
@@ -249,6 +237,19 @@ function updateTrayMenu() {
                 }
             }
         },
+        { type: 'separator' },
+        {
+            label: isPaused ? 'Resume Timer' : 'Pause Timer',
+            submenu: isPaused ? null : pauseSubmenu,
+            click: () => {
+                if (isPaused) {
+                    isPaused = false;
+                    pauseEndTime = null;
+                    startTimer();
+                }
+            }
+        },
+        { type: 'separator' },
         {
             label: 'Break Sound',
             submenu: [
