@@ -78,7 +78,7 @@
         <h1>Time for a Break!</h1>
         <div class="message">Look at something 20 feet away to reduce eye strain</div>
         <div class="timer" id="timer">20</div>
-        <div class="actions">
+        <div class="actions" id="actions" style="display: none;">
             <button class="skip" onclick="skipBreak()">Skip Break</button>
         </div>
     </div>
@@ -87,7 +87,14 @@
         const { ipcRenderer } = require('electron');
         const timer = document.getElementById('timer');
         const breakSound = document.getElementById('breakSound');
+        const actionsDiv = document.getElementById('actions');
         let timeLeft = 20;
+
+        // Show/hide skip button based on setting
+        const showSkipButton = ipcRenderer.sendSync('get-skip-button-setting');
+        if (showSkipButton) {
+            actionsDiv.style.display = 'flex';
+        }
 
         // Prevent gesture-based window switching
         document.addEventListener('wheel', (e) => {
