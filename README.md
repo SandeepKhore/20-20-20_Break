@@ -32,6 +32,12 @@ To start the application, run:
 npm start
 ```
 
+To create build
+```bash
+npm run build
+```
+It will create Mac support .app/.dmg executable. That you can install.
+
 ## How it Works
 
 The app runs a timer for 20 minutes. When the timer completes, it activates break mode across all your connected displays:
