@@ -22,7 +22,7 @@ const store = new Store();
 const autoLauncher = process.env.NODE_ENV !== 'development' ? new AutoLaunch({
     name: '20-20-20-break',
     path: app.getPath('exe'),
-    isHidden: true, // Prevents dock icon on launch
+    isHidden: process.platform === 'darwin', // macOS only: prevents dock icon on launch
 }) : null;
 
 // Set default settings if not exists
@@ -97,7 +97,7 @@ function createBreakWindow() {
         });
         
         // Additional window lock settings
-        window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+        window.setVisibleOnAllWorkspaces(true);
         window.setAlwaysOnTop(true, 'screen-saver', 1);
 
         window.loadFile(path.join(__dirname, 'break.html'));
@@ -299,8 +299,12 @@ function updateTrayMenu() {
 // Create the tray icon
 function createTray() {
     try {
-        tray = new Tray(nativeImage.createEmpty());
-        tray.setTitle('👁️');
+        const iconPath = path.join(__dirname, 'assets', 'tray-icon.png');
+        const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+        tray = new Tray(icon);
+        if (process.platform === 'darwin') {
+            tray.setTitle('👁️');
+        }
         updateTrayMenu();
     } catch (error) {
         console.error('Failed to create tray:', error);
