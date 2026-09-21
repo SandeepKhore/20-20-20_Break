@@ -3,10 +3,17 @@ node_modules/
 .pnp
 .pnp.js
 
-# Production build
+# Production build output
 dist/
-build/
 out/
+
+# electron-builder buildResources dir: ignore its contents, but keep the
+# icon sources that package.json references (build/icon.*, build/*.svg)
+build/*
+!build/icon.png
+!build/icon.ico
+!build/icon.icns
+!build/tray-icon-eye.svg
 
 # Environment variables
 .env
