@@ -4,10 +4,11 @@
   "description": "Simple 20-20-20 rule break timer",
   "main": "src/main.js",
   "type": "module",
+  "desktopName": "com.20-20-20-break.desktop",
   "scripts": {
-    "start": "NODE_ENV=development bun electron .",
-    "build": "NODE_ENV=production bun electron-builder",
-    "pack": "NODE_ENV=production bun electron-builder --dir"
+    "start": "NODE_ENV=development npx electron .",
+    "build": "NODE_ENV=production npx electron-builder",
+    "pack": "NODE_ENV=production npx electron-builder --dir"
   },
   "trustedDependencies": ["electron-store", "auto-launch"],
   "build": {
@@ -23,13 +24,16 @@
       "icon": "build/icon.ico"
     },
     "linux": {
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "target": ["AppImage", "deb"],
+      "category": "Utility",
+      "syncDesktopName": true
     }
   },
-  "author": "",
+  "author": "SandeepKhore <sandeepkhore@users.noreply.github.com>",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^28.0.0",
+    "electron": "^44.4.3",
     "electron-builder": "^26.0.12"
   },
   "dependencies": {
